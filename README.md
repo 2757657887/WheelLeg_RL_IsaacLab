@@ -11,7 +11,7 @@ isaaclab.bat -p scripts/reinforcement_learning/rsl_rl/play.py --task Isaac-wheel
 
 如果你只是想把仓库拉下来、装好环境并开始训练或播放，这份 README 就够用。
 
-## 1. 当前仓库保留了什么
+## 1. 当前仓库内容
 
 这个仓库现在只服务一个任务：
 
@@ -23,11 +23,6 @@ isaaclab.bat -p scripts/reinforcement_learning/rsl_rl/play.py --task Isaac-wheel
 - 机器人资产：`source/isaaclab_assets/isaaclab_assets/robots/wheel_leg_robot.py`
 - 机器人 USD：`Robot_USD/Robot_Model.usd`
 
-已经删除的内容包括：
-
-- 其他 IsaacLab 任务
-- 其他 RL 框架入口
-- 示例、测试、文档等非运行必需内容
 
 ## 2. 运行前提
 
