@@ -43,7 +43,7 @@ isaaclab.bat -p scripts/reinforcement_learning/rsl_rl/play.py --task Isaac-wheel
 ## 3. 获取仓库
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/2757657887/WheelLeg_RL_IsaacLab.git
 cd IsaacLab
 ```
 
