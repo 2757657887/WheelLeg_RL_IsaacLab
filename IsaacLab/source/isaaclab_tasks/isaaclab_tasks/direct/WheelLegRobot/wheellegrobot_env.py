@@ -8,6 +8,12 @@
 
 from __future__ import annotations
 
+import json
+import csv
+import os
+import time
+from pathlib import Path
+
 import torch
 from collections.abc import Sequence
 
@@ -28,8 +34,6 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: 
 
 from isaaclab_tasks.direct.WheelLegRobot.APP.INS_task import INS
-import csv
-import os
 
 @configclass
 class WheelLegRobotEnvCfg(DirectRLEnvCfg):
@@ -158,6 +162,10 @@ class WheelLegRobotEnv(DirectRLEnv):
 
         # 目标命令 (4维: 线速度x,线速度y,角速度yaw,腿长)
         self.commands = torch.tensor([2,0,0,0.08]).repeat(self.num_envs,1).to(self.device) # (num_envs,4)
+        self._keyboard_command_path = Path(__file__).resolve().parent / "APP" / "keyboard_commands.json"
+        self._keyboard_command_timeout_s = 0.25
+        self._keyboard_default_command = torch.tensor([0.0, 0.0, 0.0, 0.08], dtype=self.commands.dtype, device=self.device)
+        self._enable_external_keyboard = self.num_envs == 1 and not self.israndcmd
 
         # 初始化数据数组
         self.nan_obs = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
@@ -186,6 +194,37 @@ class WheelLegRobotEnv(DirectRLEnv):
         if not file_exists:
             self.csv_writer.writerow(["time",'theta', 'v_filter', 'myPithR'])
             self.csv_file.flush()
+
+    def _update_commands_from_keyboard_file(self):
+        """Read commands written by the standalone keyboard helper."""
+        if not self._enable_external_keyboard:
+            return
+
+        try:
+            with self._keyboard_command_path.open("r", encoding="utf-8") as command_file:
+                payload = json.load(command_file)
+        except FileNotFoundError:
+            return
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            return
+
+        commands = payload.get("commands")
+        timestamp = payload.get("timestamp")
+        if not isinstance(commands, list) or len(commands) != 4:
+            return
+        if not isinstance(timestamp, (int, float)):
+            return
+
+        if time.time() - float(timestamp) > self._keyboard_command_timeout_s:
+            command_tensor = self._keyboard_default_command
+        else:
+            try:
+                command_tensor = torch.tensor(commands, dtype=self.commands.dtype, device=self.device)
+            except (TypeError, ValueError):
+                return
+
+        command_tensor[3] = torch.clamp(command_tensor[3], 0.06, 0.15)
+        self.commands[:] = command_tensor.unsqueeze(0).repeat(self.num_envs, 1)
 
 
     def _setup_scene(self):
@@ -230,6 +269,7 @@ class WheelLegRobotEnv(DirectRLEnv):
         # 更新键盘输入指令
         # self.commands = self.listener.commands
         # 获取角速度    
+        self._update_commands_from_keyboard_file()
         self.Gyro = self.wheellegrobot.data.root_ang_vel_b
         # 机器人的四元数
         q = self.wheellegrobot.data.body_quat_w[:,self.base_link_idx,:]

@@ -19,6 +19,7 @@ isaaclab.bat -p scripts/reinforcement_learning/rsl_rl/play.py --task Isaac-wheel
 - 强化学习框架：`rsl_rl`
 - 训练入口：`scripts/reinforcement_learning/rsl_rl/train.py`
 - 播放入口：`scripts/reinforcement_learning/rsl_rl/play.py`
+- 键盘控制入口：`source/isaaclab_tasks/isaaclab_tasks/direct/WheelLegRobot/APP/keyboard_task.py`
 - 机器人环境：`source/isaaclab_tasks/isaaclab_tasks/direct/WheelLegRobot/wheellegrobot_env.py`
 - 机器人资产：`source/isaaclab_assets/isaaclab_assets/robots/wheel_leg_robot.py`
 - 机器人 USD：`Robot_USD/Robot_Model.usd`
@@ -185,6 +186,51 @@ isaaclab.bat -p scripts/reinforcement_learning/rsl_rl/train.py --task Isaac-whee
 - `--num_steps` 控制这次播放最多跑多少步，默认 `1000`。
 - 如果你没有显式指定 `--load_run` 和 `--checkpoint`，脚本会按最新 run / 最新 checkpoint 的规则自动选择。
 
+### 方式 F：播放时使用独立键盘控制
+
+当前仓库已经增加了独立键盘控制脚本，可以在 `play.py` 运行时单独启动，并给机器人持续发送指令。
+
+使用方式：
+
+1. 先启动播放，并确保使用单环境：
+
+```bash
+isaaclab.bat -p scripts/reinforcement_learning/rsl_rl/play.py --task Isaac-wheellegrobot-Direct-v0 --num_envs 1
+```
+
+2. 再打开另一个终端，运行键盘控制脚本：
+
+```bash
+python IsaacLab\source\isaaclab_tasks\isaaclab_tasks\direct\WheelLegRobot\APP\keyboard_task.py
+```
+
+脚本启动后会持续更新下面这个共享命令文件：
+
+```bash
+IsaacLab\source\isaaclab_tasks\isaaclab_tasks\direct\WheelLegRobot\APP\keyboard_commands.json
+```
+
+`play.py` 对应环境会在运行中读取该文件，把指令同步到机器人。
+
+按键映射：
+
+- `Up`：前进
+- `Down`：后退
+- `Left`：左转
+- `Right`：右转
+- `8` 或 `Home`：增大腿长
+- `2` 或 `End`：减小腿长
+
+注意事项：
+
+- 键盘控制默认只面向 `play.py --num_envs 1`
+- 关闭 `keyboard_task.py` 后，外部命令会很快失效，机器人会回到默认命令
+- 如果环境里没有 `pynput`，请先安装：
+
+```bash
+pip install pynput
+```
+
 ## 10. 日志和模型保存位置
 
 训练日志默认保存在：
@@ -227,6 +273,9 @@ IsaacLab/
             └─ WheelLegRobot/
                ├─ __init__.py
                ├─ wheellegrobot_env.py
+               ├─ APP/
+               │  ├─ INS_task.py
+               │  └─ keyboard_task.py
                └─ agents/
                   └─ rsl_rl_ppo_cfg.py
 ```
